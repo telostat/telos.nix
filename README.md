@@ -30,12 +30,11 @@ niv add telostat/telos.nix -n telosnix -b <branch>
 
 Currently, following expressions are exported:
 
-| Path                              | Description                                                       |
-| --------------------------------- | ----------------------------------------------------------------- |
-| `pkgs.stable`                     | Stable `nixpkgs` (based on `release-22.05` `nixpkgs` branch)      |
-| `pkgs.unstable`                   | Unstable `nixpkgs` (based on `nixpkgs-unstable` `nixpkgs` branch) |
-| `tools.haskell.haskell`           | Haskell set based on `ghc902` compiler with overrides             |
-| `tools.haskell.packages.fourmolu` | [fourmolu](https://hackage.haskell.org/package/fourmolu) v0.8.2.0 |
+| Path                    | Description                                                              |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `pkgs-sources.stable`   | Stable `nixpkgs` source (based on `release-22.05` `nixpkgs` branch)      |
+| `pkgs-sources.unstable` | Unstable `nixpkgs` source (based on `nixpkgs-unstable` `nixpkgs` branch) |
+| `tools.haskell`         | Various functions to make building Haskell development tools             |
 
 ## License
 
