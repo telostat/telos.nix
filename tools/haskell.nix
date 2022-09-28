@@ -1,67 +1,82 @@
+## This module provides Haskell development helpers and tools which
+## are somewhat opinionated.
+##
+## In particular, the motivation is (1) to access some Haskell
+## development tools (such as apply-refact, fourmolu,
+## haskell-language-server, hlint etc...) in all projects that make
+## use of telos.nix, and (2) while doing so, to benefit from (at least
+## local) binary caches to avoid long compilation times for these
+## tools.
 let
-  ## Nix packages override configuration for Haskell development
-  ## tools.
+  ## Provides a helper function that overrides Haskell packages for
+  ## our custom Haskell development tools.
   ##
   ## Usage:
   ##
-  ##    devpkgs = import <nixpkgs-unstable> { inherit config-dev-hs; };
-  ##    devpkgs = import telosnix.pkgs-sources.unstable { inherit config-dev-hs; };
-  ##
-  ## Note that this is NOT for the package being developed. It can
-  ## have its own Nix packages source and configuration. This is
-  ## rather for the Haskell tools such as language server, linters,
-  ## formatters etc...
-  ##
-  ## The motivation is to:
-  ##
-  ## 1. Use latest Haskell development tools.
-  ## 2. Benefit from Nix binary caches.
-  ##
-  ## For the latter, you should be using the same underlying package
-  ## sources and GHC.
-  config-dev-hs = {
-    packageOverrides = pkgs: rec {
-      haskellPackages = pkgs.haskellPackages.override {
-        overrides = new: old: rec {
-          apply-refact = old.apply-refact_0_10_0_0;
-          Cabal = old.Cabal_3_6_3_0;
-          fourmolu = old.fourmolu_0_8_2_0;
-          ghc-lib-parser = old.ghc-lib-parser_9_2_4_20220729;
-          hlint = old.hlint_3_5;
-        };
-      };
+  ## pkgs.haskellPackages.override {
+  ##   overrides = overrideHaskellForDevTools;
+  ## };
+  overrideHaskellForDevTools =
+    new: old: {
+      apply-refact = old.apply-refact_0_10_0_0;
+      Cabal = old.Cabal_3_6_3_0;
+      fourmolu = old.fourmolu_0_8_2_0;
+      ghc-lib-parser = old.ghc-lib-parser_9_2_4_20220729;
     };
-  };
 
-  ## Imports and returns a given Nix packages source with our custom
-  ## Nix packages override configuration for Haskell development
-  ## tools.
-  get-haskell-development-packages = source:
-    import source { inherit config-dev-hs; };
-
-  ## Imports and returns a compiler specific Haskell packages set with
-  ## our custom Nix packages override configuration for Haskell
-  ## development tools.
-  get-haskell-development-compiler = source: compiler:
-    (get-haskell-development-packages source).haskell.packages.${compiler};
-
-  ## Returns common Haskell development tools for the given Nix
-  ## packages source with our custom Nix packages override
-  ## configuration for Haskell development tools.
-  get-haskell-development-tools = source: compiler:
+  ## Returns the Haskell set for development purposes.
+  ##
+  ## In particular, it overrides packages for our custom Haskell
+  ## development tools and optional overrides provided.
+  ##
+  ## Usage:
+  ##
+  ##     override-haskell-for-package = new: old: rec {
+  ##       relude = my-own-relude;
+  ##     };
+  ##
+  ##     haskell = telosnix.tools.haskell.getHaskell
+  ##       {
+  ##         pkgs = my-pkgs;
+  ##         compiler = my-compiler;
+  ##         overrides = override-haskell-for-package;
+  ##       };
+  ##
+  ##     ghc = haskell.ghcWithPackages (_: my-haskell-package-deps);
+  ##
+  ##     haskell-dev-tools-for-my-shell = with haskell;
+  ##       [
+  ##         ## Our GHC with all packages required to build and test our package:
+  ##         ghc
+  ##
+  ##         ## Various haskell tools:
+  ##         apply-refact
+  ##         cabal-install
+  ##         cabal2nix
+  ##         fourmolu
+  ##         haskell-language-server
+  ##         hlint
+  ##         hpack
+  ##       ];
+  getHaskell =
+    { pkgs
+    , compiler
+    , overrides ? new: old: { }
+    }:
     let
-      haskell = get-haskell-development-compiler source compiler;
+      overrider = new: old:
+        let
+          withTools = overrideHaskellForDevTools new old;
+          requested = overrides new old;
+        in
+        withTools // requested
+      ;
     in
-    [
-      haskell.apply-refact
-      haskell.fourmolu
-      haskell.haskell-language-server
-      haskell.hlint
-    ];
+    pkgs.haskell.packages.${compiler}.override {
+      overrides = overrider;
+    };
 in
 {
-  config-dev-hs = config-dev-hs;
-  get-haskell-development-packages = get-haskell-development-packages;
-  get-haskell-development-compiler = get-haskell-development-compiler;
-  get-haskell-development-tools = get-haskell-development-tools;
+  overrideHaskellForDevTools = overrideHaskellForDevTools;
+  getHaskell = getHaskell;
 }
