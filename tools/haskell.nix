@@ -18,7 +18,6 @@ let
   ## };
   overrideHaskellForDevTools =
     new: old: {
-      apply-refact = old.apply-refact_0_10_0_0;
       Cabal = old.Cabal_3_6_3_0;
       fourmolu = old.fourmolu_0_8_2_0;
       ghc-lib-parser = old.ghc-lib-parser_9_2_4_20220729;
