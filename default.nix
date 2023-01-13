@@ -14,7 +14,7 @@ in
 
   ## Categorized tools.
   tools = {
-    devshell = import ./tools/devshell.nix { pkgs = import sources.nixpkgs { }; };
+    devshell = import ./tools/devshell { pkgs = import sources.nixpkgs { }; };
     haskell = import ./tools/haskell.nix;
   };
 }

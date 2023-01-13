@@ -1,20 +1,7 @@
 { pkgs, ... }:
 
 let
-  devshell-banner = pkgs.writeShellScriptBin "devshell-banner" ''
-    ## Pretty-print the name of the devshell:
-    "${pkgs.figlet}/bin/figlet" -c -t "''${DEVSHELL_NAME}" | "${pkgs.lolcat}/bin/lolcat" -S 20 -p 1 -F 0.02
-
-    ## Show welcome notice:
-    "${pkgs.rich-cli}/bin/rich" "''${DEVSHELL_WELCOME_FILE}"
-
-    ## Last notice:
-    echo "For further help, open the devshell book via \"devshell-book\""
-  '';
-
-  devshell-book = pkgs.writeShellScriptBin "devshell-book" ''
-    xdg-open "''${DEVSHELL_DOCS_DIR}/book/html/index.html"
-  '';
+  devsh = pkgs.writeScriptBin "devsh" (builtins.readFile ./devsh.py);
 
   ## Example usage:
   ##
@@ -32,11 +19,11 @@ let
   ##   devshell = nix.telosnix.tools.devshell {
   ##     name = "devshell-example";
   ##     src = ./.;
-  ##     welcome = ./README_welcome.md;
+  ##     quickstart = ./README_quickstart.md;
   ##     docs = [
   ##       { name = "readme"; title = "Introduction"; path = "./README.md"; }
-  ##       { name = "welcome"; title = "Welcome to the Devshell"; path = "./README_welcome.md"; }
-  ##       { name = "devshell"; title = "Devshell Help"; path = "./README_devshell.ronn"; }
+  ##       { name = "quickstart"; title = "Quickstart"; path = "./README_quickstart.md"; }
+  ##       { name = "guide"; title = "Guide"; path = "./README_guide.ronn"; }
   ##     ];
   ##   };
   ## in
@@ -54,7 +41,7 @@ let
   ##   '';
   ## }
   ## ```
-  mkDevshell = { name, src, docs ? [], welcome }: with pkgs; stdenv.mkDerivation {
+  mkDevshell = { name, src, docs ? [], quickstart }: with pkgs; stdenv.mkDerivation {
     name = name;
     src = src;
     DEVSHELL_NAME = name;
@@ -70,8 +57,8 @@ let
       mkdir -p $out/share/doc/book/src
       mkdir -p $out/share/doc/book/html
 
-      ## Copy welcome message:
-      cp "${welcome}" $out/share/doc/welcome.md
+      ## Copy quickstart guide:
+      cp "${quickstart}" $out/share/doc/quickstart.md
 
       ## Copy the devshell book sections:
       ${toString (map ({name, title, path}: "cp \"${path}\" $out/share/doc/book/src/${name}.md\n") docs)}
@@ -99,18 +86,14 @@ let
       "${mdbook}/bin/mdbook" build --dest-dir $out/share/doc/book/html $out/share/doc/book
 
       ## Copy scripts to the output destination:
-      cp ${devshell-banner}/bin/devshell-banner $out/bin/
-      cp ${devshell-book}/bin/devshell-book $out/bin/
+      cp ${devsh}/bin/devsh $out/bin/
 
-      ## Wrap devshell-banner program:
-      wrapProgram $out/bin/devshell-banner \
+      ## Wrap devsh program:
+      wrapProgram $out/bin/devsh \
+        --prefix PATH : ${lib.makeBinPath [ figlet lolcat rich-cli ]} \
         --set DEVSHELL_NAME "${name}" \
-        --set DEVSHELL_WELCOME_FILE "$out/share/doc/welcome.md"
-
-      ## Wrap devshell-list-docs program:
-      wrapProgram $out/bin/devshell-book \
-        --set DEVSHELL_NAME "${name}" \
-        --set DEVSHELL_DOCS_DIR "$out/share/doc"
+        --set DEVSHELL_DOCS_DIR "$out/share/doc" \
+        --set DEVSHELL_QUICKSTART "$out/share/doc/quickstart.md"
     '';
   };
 in
