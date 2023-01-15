@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# pyright: reportConstantRedefinition=false
+
 import argparse
 import os
 import subprocess as sp
@@ -10,11 +12,12 @@ DEVSHELL_NAME = os.environ["DEVSHELL_NAME"]
 DEVSHELL_DOCS_DIR = os.environ["DEVSHELL_DOCS_DIR"]
 DEVSHELL_QUICKSTART = os.environ["DEVSHELL_QUICKSTART"]
 DEVSHELL_EXTENSIONS = os.environ["DEVSHELL_EXTENSIONS"]
-
+DEVSHELL_EXTENSIONS_HELP = ""
 
 with open(DEVSHELL_EXTENSIONS) as cfile:
     provided = cfile.read().strip()
-    DEVSHELL_EXTENSIONS_HELP = "" if not provided else f"""List of Extension Commands:
+    if provided:
+        DEVSHELL_EXTENSIONS_HELP = f"""List of Extension Commands:
 ===========================
 
 {provided}
@@ -65,7 +68,7 @@ def do_banner(_args: Any) -> None:
 
 
 def do_quickstart(_args: Any) -> None:
-    sp.run(("rich", DEVSHELL_QUICKSTART), check=True)
+    sp.run(("rich", "-c", "-w", "80", DEVSHELL_QUICKSTART), check=True)
 
 
 def do_welcome(args: Any) -> None:
