@@ -34,7 +34,8 @@ Currently, following expressions are exported:
 | ----------------------- | ------------------------------------------------------------------------ |
 | `pkgs-sources.stable`   | Stable `nixpkgs` source (based on `release-22.05` `nixpkgs` branch)      |
 | `pkgs-sources.unstable` | Unstable `nixpkgs` source (based on `nixpkgs-unstable` `nixpkgs` branch) |
-| `tools.haskell`         | Various functions to make building Haskell development tools             |
+| `tools.devshell`        | Various functions for building a development shell                       |
+| `tools.haskell`         | Various functions for building Haskell development tools                 |
 
 ## License
 
