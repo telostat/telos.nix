@@ -40,7 +40,9 @@ let
   ##   ] ++ nix.haskell-dev-tools;
   ##
   ##   shellHook = ''
-  ##     devshell-banner
+  ##     devsh welcome
+  ##     echo
+  ##     devsh exec
   ##
   ##     ## Make sure that doctest finds correct GHC executable and libraries:
   ##     export NIX_GHC=${nix.ghc}/bin/ghc
