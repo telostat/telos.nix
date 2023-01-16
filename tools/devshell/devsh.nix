@@ -4,6 +4,9 @@ let
   ## Create devsh script:
   scriptDevsh = pkgs.writeScriptBin "devsh" (builtins.readFile ./devsh.py);
 
+  ## Import devshell guide tools:
+  devshGuide = import ./devsh-guide.nix { pkgs = pkgs; };
+
   ## Example usage:
   ##
   ## ```
@@ -21,11 +24,13 @@ let
   ##     name = "devshell-example";
   ##     src = ./.;
   ##     quickstart = ./README_quickstart.md;
-  ##     docs = [
+  ##     guide = [
   ##       { name = "readme"; title = "Introduction"; path = "./README.md"; }
   ##       { name = "quickstart"; title = "Quickstart"; path = "./README_quickstart.md"; }
   ##       { name = "another-guide"; title = "Another Guide"; path = "./README_guide.ronn"; }
   ##     ];
+  ##     ## Or you can provide the path of a mdBook:
+  ##     ## guide = ./nix/docs/development;
   ##     extensions = {
   ##       my-command = {
   ##         help = "Help for my command";
@@ -50,13 +55,14 @@ let
   ##   '';
   ## }
   ## ```
-  mkDevshell = { name, src, quickstart, docs ? [ ], extensions ? { } }:
+  mkDevshell = { name, src, quickstart, guide ? [ ], extensions ? { } }:
     with pkgs;
     let
       extensionDrvs = lib.attrsets.mapAttrs (name: value: writeShellScriptBin "devsh-extension-${name}" "${value.exec} \"\${@}\"") extensions;
       extensionHelp = lib.strings.concatStrings (lib.attrsets.attrValues (lib.attrsets.mapAttrs (name: value: "${name}: ${value.help}\n") extensions));
       extensionHelpFile = writeTextFile { name = "extensions.dat"; text = extensionHelp; };
       binPathDevsh = lib.makeBinPath ([ figlet lolcat rich-cli ] ++ (lib.attrsets.attrValues extensionDrvs));
+      guideDevsh = devshGuide.mkGuide { source = guide; };
     in
     stdenv.mkDerivation {
       name = name;
@@ -68,8 +74,7 @@ let
         ## Create output directories:
         mkdir -p $out/bin
         mkdir -p $out/etc
-        mkdir -p $out/share/doc/guide/src
-        mkdir -p $out/share/doc/guide/html
+        mkdir -p $out/share/doc/
 
         ## Copy quickstart guide:
         cp "${quickstart}" $out/share/doc/quickstart.md
@@ -77,30 +82,8 @@ let
         ## Copy devshell extensions help:
         cp "${extensionHelpFile}" $out/share/doc/extensions.dat
 
-        ## Copy the devshell guide sections:
-        ${toString (map ({name, title, path}: "cp \"${path}\" $out/share/doc/guide/src/${name}.md\n") docs)}
-
-        ## Write devshell guide index:
-        cat <<EOF > $out/share/doc/guide/src/SUMMARY.md
-        ${toString (map ({name, title, path}: "- [${title}](${name}.md)\n") docs)}
-        EOF
-
-        ## Write devshell guide configuration:
-        cat <<EOF > $out/share/doc/guide/book.toml
-        [book]
-        title = "${name}"
-        description = "This is the Development Shell Guide for ${name}."
-
-        [output.html]
-        default-theme = "light"
-        preferred-dark-theme = "ayu"
-        curly-quotes = true
-        mathjax-support = true
-        copy-fonts = true
-        EOF
-
-        ## Build devshell guide:
-        "${mdbook}/bin/mdbook" build --dest-dir $out/share/doc/guide/html $out/share/doc/guide
+        ## Copy the guide:
+        cp -R "${guideDevsh}/share/doc/guide" $out/share/doc/
 
         ## Copy scripts to the output destination:
         cp ${scriptDevsh}/bin/devsh $out/bin/
